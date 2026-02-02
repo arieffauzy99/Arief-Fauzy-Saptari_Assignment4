@@ -1,0 +1,104 @@
+# 1. Load Data Geojson
+import geopandas as gpd
+
+geojson_path = r"E:\MAPID 2026\Day 4 Mulai Pyton Awal\Mapid_Webgis_Day4\labs\data_point_pluvial_flood_dataset.geojson"
+
+# 2. Buat DataFrame analisis (salinan)
+df_banjir = gdf_geojson.copy()
+
+# 3. Load data flood dan Tampilkan 5 Baris Pertama data floodnya
+gdf_geojson = gpd.read_file(geojson_path)
+print(gdf_geojson.head())
+
+# 4. Buat DataFrame analisis (salinan)
+df_banjir = gdf_geojson.copy()
+
+# 5. Eksplorasi Data
+print("Statistik Deskriptif:")
+
+print(df_banjir.info)
+print(df_banjir.describe())
+
+# 6. Membuat figure dengan 2 subplots (1 baris, 2 kolom)
+plt.figure(figsize=(12, 5))
+
+# a. Histogram untuk parameter Slope
+plt.subplot(1, 2, 1)
+sns.histplot(df_banjir['Slope'], kde=True, color='teal')
+plt.title('Distribusi Parameter Slope')
+plt.xlabel('Slope')
+plt.ylabel('Frekuensi')
+
+# b. Histogram untuk parameter Rainfall
+plt.subplot(1, 2, 2)
+sns.histplot(df_banjir['Rainfall'], kde=True, color='blue')
+plt.title('Distribusi Parameter Rainfall')
+plt.xlabel('Rainfall')
+plt.ylabel('Frekuensi')
+
+plt.tight_layout()
+plt.show()
+
+# 7. Analisis sebaran kategori susceptibility (SUSCEP) pada dataset
+jumlah_suscep = df_banjir['SUSCEP'].value_counts()
+print("Jumlah titik per kategori Susceptibility:")
+print(jumlah_suscep)
+
+# 8. Memunculkan grafik susce[]
+plt.figure(figsize=(10, 6))
+sns.countplot(data=df_banjir, x='SUSCEP', palette='viridis')
+plt.title('Sebaran Kategori Susceptibility (SUSCEP)')
+plt.xlabel('Kategori Susceptibility')
+plt.ylabel('Jumlah Titik')
+
+plt.show()
+
+# 9. Scatter Plot Hubungan Parameter
+plt.figure(figsize=(10, 6))
+# a. Membuat scatter plot antara Slope dan Rainfall
+sns.scatterplot(data=df_banjir, x='Slope', y='Rainfall', hue='SUSCEP', palette='magma')
+plt.title('Hubungan antara Slope dan Rainfall')
+plt.xlabel('Slope')
+plt.ylabel('Rainfall')
+plt.legend(title='Susceptibility', bbox_to_anchor=(1.05, 1), loc='upper left')
+
+plt.tight_layout()
+plt.show()
+
+# 10. Menghitung matriks korelasi
+# Kita hanya mengambil kolom numerik agar tidak error saat menghitung korelasi
+kolom_numerik = df_banjir.select_dtypes(include=['float64', 'int64'])
+korelasi_matriks = kolom_numerik.corr()
+
+plt.figure(figsize=(10, 8))
+sns.heatmap(korelasi_matriks, annot=True, cmap='coolwarm', fmt=".2f", linewidths=0.5)
+
+plt.title('Heatmap Korelasi Antar Parameter Numerik')
+plt.show()
+
+# 11. Membuat Peta Interaktif
+# Memilih dan filter 5 titik acak dari dataset
+# Gunakan .sample(n) sesuai hint untuk mengambil data acak
+df_sample = df_banjir.sample(n=5)
+
+# Membuat objek peta dasar
+# Kita ambil rata-rata koordinat dari data sampel sebagai titik tengah peta
+m = folium.Map(location=[df_sample['Y'].mean(), df_sample['X'].mean()], zoom_start=12)
+
+# Menambahkan marker untuk setiap titik hasil filter
+for index, row in df_sample.iterrows():
+    # Menyiapkan teks popup yang menampilkan Susceptibility, Slope, Rainfall, dan TWI
+    popup_text = f"Susceptibility: {row['SUSCEP']}<br>" \
+                 f"Slope: {row['Slope']}<br>" \
+                 f"Rainfall: {row['Rainfall']}<br>" \
+                 f"TWI: {row['TWI']}"
+    
+    # Membuat marker dengan popup
+    folium.Marker(
+        location=[row['Y'], row['X']],
+        popup=folium.Popup(popup_text, max_width=300),
+        tooltip=row['SUSCEP']
+    ).add_to(m)
+
+    # 4. Simpan peta sebagai file HTML
+m.save('peta_titik_flood.html')
